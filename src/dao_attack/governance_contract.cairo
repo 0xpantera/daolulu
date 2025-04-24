@@ -1,23 +1,23 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-pub trait IGovToken<TContractState> {
-    fn set_treasury(ref self: TContractState, treasury: ContractAddress);
-    fn transfer(ref self: TContractState, to: ContractAddress, amount: u256);
-    fn mint(ref self: TContractState, to: ContractAddress, amount: u256);
-    fn burn(ref self: TContractState, from: ContractAddress, amount: u256);
+pub trait IGovToken<TState> {
+    fn set_treasury(ref self: TState, treasury: ContractAddress);
+    fn transfer(ref self: TState, to: ContractAddress, amount: u256);
+    fn mint(ref self: TState, to: ContractAddress, amount: u256);
+    fn burn(ref self: TState, from: ContractAddress, amount: u256);
     fn create_proposal(
-        ref self: TContractState, description: ByteArray, to: ContractAddress, amount: u256,
+        ref self: TState, description: ByteArray, to: ContractAddress, amount: u256,
     );
-    fn vote(ref self: TContractState, id: u256, support: bool);
-    fn execute(ref self: TContractState, id: u256);
+    fn vote(ref self: TState, id: u256, support: bool);
+    fn execute(ref self: TState, id: u256);
 }
 
 #[derive(Drop, Serde, starknet::Store)]
 struct Proposal {
     id: u256, // The id of the proposal
     description: ByteArray, // The description of the proposal
-    to: ContractAddress, // The address where send funds from treasury
+    to: ContractAddress, // The address to send funds from treasury
     amount: u256, // The amount to send
     timestamp: u64, // The timestamp of the proposal creation
     yes: u256, // The amount of votes in favor
@@ -131,6 +131,7 @@ mod GovernanceContract {
             assert(!self.voted.entry(get_caller_address()).read(id), 'Already voted');
             let mut proposal: Proposal = self.proposals.read(id);
             assert(proposal.id > 0, 'Proposal not found');
+            // 604800 -> 7 days
             assert(proposal.timestamp + 604800_u64 > get_block_timestamp(), 'Voting period ended');
 
             // Casting the vote
@@ -149,7 +150,7 @@ mod GovernanceContract {
         /// Executes a proposal if it has passed and the voting period has ended
         /// @param id - The ID of the proposal to execute
         fn execute(ref self: ContractState, id: u256) {
-            // Porposal Checks: exists, not executed, voting period ended (604800 seconds)
+            // Proposal Checks: exists, not executed, voting period ended (604800 seconds)
             let mut proposal: Proposal = self.proposals.read(id);
             assert(proposal.id > 0, 'Proposal not found');
             assert(proposal.timestamp + 604800_u64 < get_block_timestamp(), 'Voting period active');

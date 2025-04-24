@@ -1,5 +1,5 @@
 mod governance_contract;
 
 #[cfg(test)]
-mod test_governance_1;
+mod test_dao_attack;
 mod treasury;

