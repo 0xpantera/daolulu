@@ -1,10 +1,10 @@
 use daolulu::dao_attack::governance_contract::{IGovTokenDispatcher, IGovTokenDispatcherTrait};
-use daolulu::dao_attack::treasury::{ITreasuryDispatcher, ITreasuryDispatcherTrait};
+use daolulu::dao_attack::treasury::ITreasuryDispatcher;
 use daolulu::utils::helpers;
-use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+use openzeppelin_token::erc20::interface::IERC20DispatcherTrait;
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global,
-    start_cheat_caller_address, stop_cheat_caller_address, stop_cheat_block_timestamp_global
+    start_cheat_caller_address, stop_cheat_block_timestamp_global, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 
@@ -73,7 +73,7 @@ fn test_dao_attack() {
 
     // transfer function in governance contract doesn't check token provenance
     // so attacker can create two other wallets, transfer all the voting tokens to one
-    // vote with it, then repeat with other wallet. 
+    // vote with it, then repeat with other wallet.
     let sybil_one: ContractAddress = 4.try_into().unwrap();
     let sybil_two: ContractAddress = 5.try_into().unwrap();
 
