@@ -1,11 +1,11 @@
 #[starknet::interface]
-trait IFlashLoanReceiver<TContractState> {
-    fn callback(ref self: TContractState, borrow_amount: u256);
+trait IFlashLoanReceiver<TState> {
+    fn callback(ref self: TState, borrow_amount: u256);
 }
 
 #[starknet::interface]
-pub trait ILendingPool<TContractState> {
-    fn flash_loan(ref self: TContractState, borrow_amount: u256);
+pub trait ILendingPool<TState> {
+    fn flash_loan(ref self: TState, borrow_amount: u256);
 }
 
 #[starknet::contract]
