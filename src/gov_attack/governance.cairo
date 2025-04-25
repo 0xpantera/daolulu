@@ -1,14 +1,12 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-pub trait IGovernance<TContractState> {
+pub trait IGovernance<TState> {
     fn init(
-        ref self: TContractState,
-        eth_address: ContractAddress,
-        voting_contract_address: ContractAddress,
+        ref self: TState, eth_address: ContractAddress, voting_contract_address: ContractAddress,
     );
-    fn execute(ref self: TContractState, data: Span<felt252>);
-    fn transfer_funds(ref self: TContractState, data: Span<felt252>);
+    fn execute(ref self: TState, data: Span<felt252>);
+    fn transfer_funds(ref self: TState, data: Span<felt252>);
 }
 
 #[starknet::contract]

@@ -1,12 +1,9 @@
-use core::traits::Default;
-use starknet::storage::{
-    MutableVecTrait, StoragePointerReadAccess, StoragePointerWriteAccess, Vec, VecTrait,
-};
+use starknet::storage::Vec;
 use starknet::{ClassHash, ContractAddress};
 
 #[allow(starknet::store_no_default_variant)]
 #[derive(Drop, Serde, starknet::Store)]
-enum ProposalType {
+pub enum ProposalType {
     UPGRADE, // To upgrade the contract
     TREASURY // To transfer funds
 }
@@ -16,7 +13,7 @@ struct VotingToken {
     id: u256, // Token ID
     owner: ContractAddress, // Token owner
     amount: u256, // Token amount
-    created_in_epoch: u64 // The epoch when the token was created (user deposited assets)
+    created_in_epoch: u64 // Epoch of token creation (user deposited assets)
 }
 
 #[starknet::storage_node]
@@ -25,32 +22,32 @@ struct Proposal {
     created: u64, // Proposal creation time
     description: ByteArray, // Proposal description
     proposal_type: ProposalType, // Proposal type
-    data: Vec<felt252>, // Vector -> Dynamic array, data contains params for proposal execution
+    data: Vec<felt252>, // Contains params for proposal execution
     yes: u256, // Yes votes
     no: u256, // No votes
     executed: bool // Proposal execution status
 }
 
 #[starknet::interface]
-pub trait IVoting<TContractState> {
-    fn lock_tokens(ref self: TContractState, amount: u256) -> u256;
-    fn unlock_tokens(ref self: TContractState, token_id: u256);
-    fn vote(ref self: TContractState, proposal_id: u256, token_id: u256, voting_for: bool);
+pub trait IVoting<TState> {
+    fn lock_tokens(ref self: TState, amount: u256) -> u256;
+    fn unlock_tokens(ref self: TState, token_id: u256);
+    fn vote(ref self: TState, proposal_id: u256, token_id: u256, voting_for: bool);
     fn create_proposal(
-        ref self: TContractState,
+        ref self: TState,
         description: ByteArray,
         proposal_type: ProposalType,
         data: Span<felt252>,
         token_id: u256,
     ) -> u256;
-    fn execute_proposal(ref self: TContractState, proposal_id: u256);
-    fn merge(ref self: TContractState, token_from: u256, token_to: u256);
-    fn split(ref self: TContractState, token_id: u256, amounts: Span<felt252>) -> Span<felt252>;
+    fn execute_proposal(ref self: TState, proposal_id: u256);
+    fn merge(ref self: TState, token_from: u256, token_to: u256);
+    fn split(ref self: TState, token_id: u256, amounts: Span<felt252>) -> Span<felt252>;
 }
 
 #[starknet::interface]
-pub trait IUpgrade<TContractState> {
-    fn upgrade(ref self: TContractState, class_hash: ClassHash);
+pub trait IUpgrade<TState> {
+    fn upgrade(ref self: TState, class_hash: ClassHash);
 }
 
 #[starknet::contract]
@@ -60,7 +57,7 @@ mod VotingContract {
     use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
         Map, MutableVecTrait, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry,
-        StoragePointerReadAccess, StoragePointerWriteAccess, Vec, VecTrait,
+        StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use starknet::{
         ClassHash, ContractAddress, get_block_timestamp, get_caller_address, get_contract_address,
@@ -250,7 +247,9 @@ mod VotingContract {
             proposal.executed.write(true);
         }
 
-        fn merge(ref self: ContractState, token_from: u256, token_to: u256) {// TODO: Implemented in the next version
+        fn merge(
+            ref self: ContractState, token_from: u256, token_to: u256,
+        ) { // TODO: Implemented in the next version
         }
 
         /// Splits a voting token into multiple new tokens
@@ -288,7 +287,6 @@ mod VotingContract {
                 let id_felt: felt252 = new_token_id.try_into().unwrap();
                 new_tokens.append(id_felt);
             }
-
             // Sum of all amounts needs to match the amount of the original token
             assert(sum == voting_token.amount.read(), 'Wrong sum');
 
