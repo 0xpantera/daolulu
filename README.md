@@ -1,4 +1,4 @@
-# DAO Attack Demonstration Project
+# DAO Governance Attacks
 
 This project demonstrates common vulnerabilities in DAO governance systems. It contains two practical examples of governance attacks that could be executed against DAOs with vulnerable designs.
 
