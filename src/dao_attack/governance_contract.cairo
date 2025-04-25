@@ -6,9 +6,7 @@ pub trait IGovToken<TState> {
     fn transfer(ref self: TState, to: ContractAddress, amount: u256);
     fn mint(ref self: TState, to: ContractAddress, amount: u256);
     fn burn(ref self: TState, from: ContractAddress, amount: u256);
-    fn create_proposal(
-        ref self: TState, description: ByteArray, to: ContractAddress, amount: u256,
-    );
+    fn create_proposal(ref self: TState, description: ByteArray, to: ContractAddress, amount: u256);
     fn vote(ref self: TState, id: u256, support: bool);
     fn execute(ref self: TState, id: u256);
 }
